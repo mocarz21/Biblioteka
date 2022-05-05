@@ -17,183 +17,126 @@ const chose = {
 
   }
 };
-
-
-
-
 const templates = {
   books: Handlebars.compile(document.querySelector(select.templateOf.books).innerHTML),
 
 };
-
-
-  
-// Przygotuj referencję do szablonu oraz listy .books-list.[done]
+//function getElements(){
 const booksContainer = document.querySelector(select.containerOf.books);
    
-//Dodaj nową funkcję render.[done]
-function render(){   
-
-
+//}
+class BooksList {
+  constructor(){
+    const  thisBook = this;
+    thisBook.filters = [];
+    thisBook.render();
+    thisBook.initActions();
+    thisBook.filterBooks();
     
 
+  }
 
+  render(){     
+ 
+    for(let book in dataSource.books){
+      dataSource.books[book].ratingBgc = determineRatingBgc(dataSource.books[book].rating);
+      dataSource.books[book].ratingWidth = (dataSource.books[book].rating * 10);
+
+      //Wewnątrz tej pętli zadbaj o wygenerowanie kodu HTML na podstawie szablonu oraz danych o konkretnej książce.   
+      const generatedHTML = templates.books(dataSource.books[book]);
     
-  //Wewnątrz niej przejdź po każdym elemencie z dataSource.books. Pamiętaj, że plik script.js ma do tego obiektu bezpośredni dostęp.
-  for(let book in dataSource.books){
-    dataSource.books[book].ratingBgc = determineRatingBgc(dataSource.books[book].rating);
-    dataSource.books[book].ratingWidth = (dataSource.books[book].rating * 10);
+      //Na postawie tego kodu HTML wygeneruj element DOM.
+      const elementDOM = utils.createDOMFromHTML(generatedHTML);
 
-
-
-
-    //Wewnątrz tej pętli zadbaj o wygenerowanie kodu HTML na podstawie szablonu oraz danych o konkretnej książce.
+      booksContainer.appendChild(elementDOM);
+ 
+    }   
+  }
+  favorite(event){
     
-    const generatedHTML = templates.books(dataSource.books[book]);
-    
-    
-    //Na postawie tego kodu HTML wygeneruj element DOM.
-    const elementDOM = utils.createDOMFromHTML(generatedHTML);
+    let favoriteBooks = []; 
+    let li =  event.path[2];  // czemu pomimo ze w tej lini wyruca ze jest jakis blad wszystko działa jak należy ??
+    console.log('event.path[2]',event.path[2]);
 
-    
+    li.classList.toggle('favorite');
+    const liDataId = li.getAttribute('data-id');
+    favoriteBooks.push(liDataId);
+    let bookNumber = favoriteBooks.indexOf(liDataId);
   
-    booksContainer.appendChild(elementDOM);
-
+    if(!(li.classList.contains('favorite'))){
+      favoriteBooks.splice(bookNumber,1);
     
+    }
+  }
+  initActions() {
+    const thisBook = this;
+
+    const filtersFormAdults = document.querySelector('.filters [value="adults"]');
+    const filtersFormNonFication = document.querySelector('.filters [value="nonFiction"]');
     
-    
-
-    console.log(dataSource.books[book]);
-    
-
-
-
+    let books = document.querySelector(select.containerOf.books);
         
-    
-  }
-  //Wygenerowany element DOM dołącz jako nowe dziecko DOM do listy .books-list.
-  
+    books.addEventListener('dblclick', function(event){
 
-    
-}
+      thisBook.favorite(event);  
+    });
 
+    filtersFormNonFication.addEventListener('change',function(event){
+      console.log('event', event);
+      thisBook.filter(event);    
+    });  
+    filtersFormAdults.addEventListener('change',function(event){
+      thisBook.filter(event);
+    });
 
-
-
-
-
-
-
-function init(){
-
-  render(); 
-  initActions();
-    
-}
-function favorite(event){
-  
-  let favoriteBooks = []; 
-  let li =  event.path[2]; //document.querySelector('[alt="' + event.target.alt + '"]');
-
-  li.classList.toggle('favorite');
-  const liDataId = li.getAttribute('data-id');
-  favoriteBooks.push(liDataId);
-  let bookNumber = favoriteBooks.indexOf(liDataId);
-  
-  if(!(li.classList.contains('favorite'))){
-    favoriteBooks.splice(bookNumber,1);
-    
   }
 
-  
-
-}
-
-function initActions(){
-
-  const filtersFormAdults = document.querySelector('.filters [value="adults"]');
-  const filtersFormNonFication = document.querySelector('.filters [value="nonFiction"]');
-  
-
-  let books = document.querySelector(select.containerOf.books);
+  filter(event){
+    const thisBook = this;
     
-  books.addEventListener('dblclick', function(event){
-
-    favorite(event);  
-  });
-
-  filtersFormNonFication.addEventListener('change',function(event){
-    console.log('event', event);
-    filter(event);    
-  });  
-  filtersFormAdults.addEventListener('change',function(event){
-    filter(event);
-  });
-
-}
-const filters = []; // czemu nie działalo jak był w funkcji  filter caly czas tworzylo nowa tablie filters
-
-function filter(event){
-
-  
-
-
-  if(event.srcElement.checked){
+    if(event.srcElement.checked){
     
-    filters.push(event.target.value);
+      thisBook.filters.push(event.target.value);
     
-
-  }else if(!event.srcElement.checked){   //Czemu nie działało mi  event.srcElement.checked == 'false'
+    }else if(!event.srcElement.checked){   //Czemu nie działało mi  event.srcElement.checked == 'false'
     
-    let deleteFiltr = filters.indexOf(event.target.value);
-    filters.splice(deleteFiltr,1);
+      let deleteFiltr = thisBook.filters.indexOf(event.target.value);
+      thisBook.filters.splice(deleteFiltr,1);
    
-  }
+    }
   
-  filterBooks();  
+    thisBook.filterBooks();  
 
-}
-
-function filterBooks(){   
-   
+  }  
+  filterBooks(){   
+    const thisBook = this;
+     
+    for(let book of dataSource.books){
+      let bookContainer = document.querySelector('[data-id="' + book.id + '"]');
     
-  for(let book of dataSource.books){
-    let bookContainer = document.querySelector('[data-id="' + book.id + '"]');
-    
-
-    for(let filt of filters){
+      for(let filt of thisBook.filters){
       
-
-      
-
-      if(!book.details[filt]== true){
-        bookContainer.classList.add('hidden');
+        if(!book.details[filt]== true){
+          bookContainer.classList.add('hidden');
         
-        break;
-                
-                
-            
-      }else{
+          break;
+                      
+        }else{
+          bookContainer.classList.remove('hidden');             
+        }
+      }
+      
+      let x =document.querySelector('[value="adults"]').checked == false;
+      console.log('x',x);
+      if(document.querySelector('[value="adults"]').checked == false && document.querySelector('[value="nonFiction"]').checked == false){
+
         bookContainer.classList.remove('hidden');
-                
       }
     }
-      
-      
-      
-      
-    
-    
-    let x =document.querySelector('[value="adults"]').checked == false;
-    console.log('x',x);
-    if(document.querySelector('[value="adults"]').checked == false && document.querySelector('[value="nonFiction"]').checked == false){
-
-      bookContainer.classList.remove('hidden');
-
-    }
-  }
   
+  }
 }
+
 function determineRatingBgc(rating){
 
   if(rating >=9){
@@ -212,8 +155,9 @@ function determineRatingBgc(rating){
     
   }
 
-
 }
-//dataSource.books[book].rating
 
-init();
+//init();
+
+
+const app = new BooksList();
